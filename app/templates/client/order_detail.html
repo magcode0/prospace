@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status, avatar, online, rating, tags, review_form %}
+{% block title %}{{ order.title }}{% endblock %}
+{% block content %}
+<a href="/client/orders" class="muted">← Мои заказы</a>
+<div class="row between" style="margin-top:8px"><h1>{{ order.title }}</h1>{{ status(order) }}</div>
+<div class="grid two">
+  <div>
+    <div class="card">
+      <dl class="kv">
+        <dt>Категория</dt><dd>{{ order.category.name }}</dd>
+        <dt>Сумма</dt><dd><b>{{ order.price | money }}</b></dd>
+        <dt>Срок</dt><dd>{{ order.deadline | dt }}</dd>
+        <dt>Навыки</dt><dd>{{ tags(order.skills) or "—" }}</dd>
+        <dt>Размещён</dt><dd>{{ order.created_at | dt }}</dd>
+        {% if order.moderation_note and order.status.value in ("moderation", "rejected") %}<dt>Модерация</dt><dd>{{ order.moderation_note }}</dd>{% endif %}
+      </dl>
+      <hr>
+      <div style="white-space:pre-wrap">{{ order.description }}</div>
+    </div>
+
+    {% if order.status.value == "open" %}
+      <h2>Отклики ({{ responses|length }})</h2>
+      <p class="muted">{% if order.matching_active %}Идёт подбор: предложение отправлено {{ pending_offers }} исполнителям.{% else %}Подбор остановлен — выберите исполнителя из откликов или снимите заказ.{% endif %}</p>
+    {% elif responses %}<h2>Отклики</h2>{% endif %}
+    {% for r in responses %}
+      <div class="card">
+        <div class="row between">
+          <div class="row">{{ avatar(r.freelancer) }}
+            <div><a href="/users/{{ r.freelancer.username }}"><b>{{ r.freelancer.full_name }}</b></a><br>
+              <small>{{ rating(r.freelancer) }} · выполнено {{ r.freelancer.completed_orders }} · {{ online(r.freelancer) }}{% if r.is_newbie %} · новичок{% endif %}</small></div>
+          </div>
+          {% if r.status.value == "accepted" %}<span class="status completed">Исполнитель</span>{% endif %}
+        </div>
+        <p style="margin-top:12px;white-space:pre-wrap">{{ r.message }}</p>
+        <div class="row wrap">
+          <a class="btn secondary sm" href="/users/{{ r.freelancer.username }}">Профиль</a>
+          <a class="btn secondary sm" href="/chat/{{ order.id }}/{{ r.freelancer_id }}">Написать</a>
+          {% if order.status.value == "open" and r.status.value == "responded" %}
+            <form method="post" action="/client/responses/{{ r.id }}/accept"><button class="btn sm success">Утвердить исполнителя</button></form>
+            <form method="post" action="/client/responses/{{ r.id }}/reject"><button class="btn sm danger">Отказать</button></form>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div>
+    {% if order.freelancer %}
+      <div class="card">
+        <h3>Исполнитель</h3>
+        <div class="row">{{ avatar(order.freelancer) }}<div><a href="/users/{{ order.freelancer.username }}">{{ order.freelancer.full_name }}</a><br><small>{{ online(order.freelancer) }}</small></div></div>
+        <a class="btn secondary block" style="margin-top:12px" href="/chat/{{ order.id }}/{{ order.freelancer_id }}">Чат по заказу</a>
+      </div>
+    {% endif %}
+
+    <div class="card stack">
+      <h3>Действия</h3>
+      {% set s = order.status.value %}
+      {% if s in ("moderation", "open") %}
+        <form method="post" action="/client/orders/{{ order.id }}/withdraw" onsubmit="return confirm('Снять заказ? Сумма заказа и плата за размещение вернутся на баланс.')">
+          <button class="btn danger block">Снять заказ</button></form>
+      {% endif %}
+      {% if s == "submitted" %}<div class="flash">Исполнитель отправил работу — проверьте её в чате.</div>{% endif %}
+      {% if s in ("in_progress", "submitted", "revision") %}
+        <form method="post" action="/client/orders/{{ order.id }}/accept" onsubmit="return confirm('Принять работу? Оплата будет перечислена исполнителю.')">
+          <button class="btn success block">Принять работу</button></form>
+      {% endif %}
+      {% if s == "submitted" %}
+        <form method="post" action="/client/orders/{{ order.id }}/revision">
+          <textarea name="comment" placeholder="Что нужно исправить"></textarea>
+          <button class="btn secondary block" style="margin-top:8px">Отправить на доработку</button></form>
+      {% endif %}
+      {% if s in ("in_progress", "submitted", "revision") %}
+        <form method="post" action="/client/orders/{{ order.id }}/decline" onsubmit="return confirm('Отклонить заказ? Исполнитель сможет обжаловать решение в течение 2 часов.')">
+          <button class="btn danger block">Отклонить заказ</button></form>
+      {% endif %}
+      {% if s == "declined" %}
+        <p class="muted">Открыто окно спора до {{ order.dispute_window_until | dt }}. В это время заказ нельзя снять. Если исполнитель не обжалует решение, сумма вернётся на ваш баланс.</p>
+      {% endif %}
+      {% if s == "disputed" and dispute %}
+        <p class="muted">Спор рассматривает поддержка до {{ dispute.due_at | dt }}.</p>
+      {% endif %}
+      {% if s == "completed" and not reviewed %}{{ review_form("/client/orders/%d/review" % order.id) }}{% endif %}
+      <a class="btn secondary block" href="/support?order={{ order.id }}">Связаться с поддержкой</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

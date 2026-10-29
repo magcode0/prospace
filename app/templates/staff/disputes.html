@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Споры{% endblock %}
+{% block content %}
+{% set staff_title = "Споры" %}{% include "staff/_nav.html" %}
+{% for d in disputes %}
+  <div class="card">
+    <div class="row between"><h3>Спор #{{ d.id }} · заказ «{{ d.order.title }}»</h3><b>{{ d.order.price | money }}</b></div>
+    <small class="muted">заказчик {{ d.order.client.full_name }} · исполнитель {{ d.order.freelancer.full_name }} · открыт {{ d.created_at | dt }} · решить до <b>{{ d.due_at | dt }}</b></small>
+    <p style="white-space:pre-wrap;margin-top:8px"><b>Позиция исполнителя:</b> {{ d.reason }}</p>
+    <a href="/chat/{{ d.order_id }}/{{ d.freelancer_id }}" class="muted">Переписка сторон</a>
+    {% if d.status.value == "open" %}
+      <form method="post" action="/staff/disputes/{{ d.id }}" style="margin-top:12px">
+        <textarea name="resolution" placeholder="Обоснование решения" required></textarea>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm" name="winner" value="client">В пользу заказчика (деньги заказчику)</button>
+          <button class="btn sm success" name="winner" value="freelancer">В пользу исполнителя (оплата исполнителю)</button>
+        </div>
+      </form>
+    {% else %}<p><span class="status completed">{{ "Решён в пользу исполнителя" if d.status.value == "resolved_freelancer" else "Решён в пользу заказчика" }}</span> {{ d.resolution }}</p>{% endif %}
+  </div>
+{% else %}<div class="card muted">Споров нет.</div>{% endfor %}
+{% endblock %}

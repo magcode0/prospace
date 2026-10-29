@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Новый заказ{% endblock %}
+{% block content %}
+<div class="grid two">
+  <div class="card">
+    <h1>Новый заказ</h1>
+    {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+    <form method="post" class="form wide">
+      <div class="field"><label for="title">Название услуги</label>
+        <input id="title" name="title" type="text" maxlength="150" value="{{ form.title }}" required></div>
+      <div class="field"><label for="category_id">Категория</label>
+        <select id="category_id" name="category_id" required>
+          <option value="">— выберите —</option>
+          {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if form.category_id == c.id }}>{{ c.name }}</option>{% endfor %}
+        </select></div>
+      <div class="field"><label for="description">Описание (ТЗ)</label>
+        <textarea id="description" name="description" rows="8" required>{{ form.description }}</textarea>
+        <div class="hint">Опишите задачу, результат и критерии приёмки. Контакты вне биржи указывать нельзя.</div></div>
+      <div class="field"><label for="skills">Необходимые навыки</label>
+        <input id="skills" name="skills" type="text" placeholder="Python, FastAPI, PostgreSQL" value="{{ form.skills }}">
+        <div class="hint">Через запятую</div></div>
+      <div class="grid half">
+        <div class="field"><label for="price">Сумма, ₽</label>
+          <input id="price" name="price" type="number" min="{{ settings.min_order_price|int }}" step="1" value="{{ form.price }}" required>
+          <div class="hint">Минимум {{ settings.min_order_price | money }}</div></div>
+        <div class="field"><label for="deadline">Срок</label>
+          <input id="deadline" name="deadline" type="datetime-local" value="{{ form.deadline }}" required>
+          <div class="hint">Время московское</div></div>
+      </div>
+      <button class="btn btn-new-order">Разместить заказ</button>
+    </form>
+  </div>
+  <div>
+    <div class="card">
+      <h3>Как это работает</h3>
+      <ul class="muted" style="padding-left:18px;margin:0">
+        <li>С баланса списываются <b>{{ settings.placement_fee | money }}</b> за размещение и сумма заказа — она хранится на безопасной сделке.</li>
+        <li>Заказ проходит модерацию, затем система предлагает его 10 подходящим исполнителям.</li>
+        <li>Сняли заказ до выбора исполнителя — вернём всё, включая плату за размещение.</li>
+        <li>Исполнитель получит деньги только после того, как вы примете работу.</li>
+      </ul>
+    </div>
+    <div class="card"><small class="muted">Ваш баланс</small><div class="stat">{{ user.balance | money }}</div><a href="/balance">Пополнить</a></div>
+  </div>
+</div>
+{% endblock %}

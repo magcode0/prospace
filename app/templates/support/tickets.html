@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Поддержка{% endblock %}
+{% block content %}
+<h1>Поддержка</h1>
+<div class="grid two">
+  <div>
+    {% for t in tickets %}
+      <a class="order-item" href="/support/{{ t.id }}"><div><h3>{{ t.subject }}</h3><small>#{{ t.id }} · {{ t.created_at | dt }}{% if t.order_id %} · заказ #{{ t.order_id }}{% endif %}</small></div>
+        <span class="status {{ {'open': 'moderation', 'answered': 'open', 'closed': ''}[t.status.value] }}">{{ {"open": "Открыто", "answered": "Есть ответ", "closed": "Закрыто"}[t.status.value] }}</span></a>
+    {% else %}<div class="card muted">Обращений пока нет.</div>{% endfor %}
+  </div>
+  <form class="card" method="post" action="/support">
+    <h3>Новое обращение</h3>
+    <input type="hidden" name="order_id" value="{{ order_id or '' }}">
+    <div class="field"><label>Тема</label><input type="text" name="subject" maxlength="200" required value="{{ 'Вопрос по заказу #%d' % order_id if order_id }}"></div>
+    <div class="field"><label>Сообщение</label><textarea name="text" required></textarea></div>
+    <button class="btn block">Отправить</button>
+  </form>
+</div>
+{% endblock %}

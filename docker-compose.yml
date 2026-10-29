@@ -1,0 +1,54 @@
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql+asyncpg://prospace:prospace@db:5432/prospace
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/1
+    SMTP_HOST: mailpit
+    SMTP_PORT: 1025
+  depends_on:
+    db: { condition: service_healthy }
+    redis: { condition: service_healthy }
+  volumes:
+    - media:/srv/media
+
+services:
+  web:
+    <<: *app
+    ports: ["8010:8000"]
+
+  worker:
+    <<: *app
+    command: celery -A app.worker.celery_app worker -B -l info --concurrency 2
+    depends_on:
+      web: { condition: service_started }
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: prospace
+      POSTGRES_PASSWORD: prospace
+      POSTGRES_DB: prospace
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5433:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prospace"]
+      interval: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["8025:8025", "1025:1025"]
+
+volumes:
+  pgdata:
+  media:

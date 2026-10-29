@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Баланс и платежи{% endblock %}
+
+{# тон, иконка и знак для каждого вида операции #}
+{% set LOOK = {
+  "topup":            ("green",  "plus"),
+  "withdraw":         ("ink",    "out"),
+  "placement_fee":    ("blue",   "doc"),
+  "placement_refund": ("green",  "back"),
+  "escrow_hold":      ("violet", "lock"),
+  "escrow_refund":    ("green",  "back"),
+  "response_fee":     ("sun",    "send"),
+  "response_refund":  ("green",  "back"),
+  "payout":           ("green",  "coin"),
+  "commission":       ("ink",    "pct"),
+  "adjustment":       ("violet", "shield"),
+} %}
+{% set ICONS = {
+  "plus": '<path d="M12 5v14M5 12h14"/>',
+  "out":  '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  "doc":  '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  "back": '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  "lock": '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  "send": '<path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/>',
+  "coin": '<circle cx="12" cy="12" r="9"/><path d="M9 9h4.5a2.5 2.5 0 0 1 0 5H9V8v9M8 15.5h5"/>',
+  "pct":  '<path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',
+  "shield": '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>',
+} %}
+
+{% block content %}
+<div class="notif-head">
+  <div>
+    <h1>Баланс и платежи</h1>
+    <p class="muted" style="margin:0">Все движения денег по вашему счёту на бирже</p>
+  </div>
+  <a class="btn secondary sm" href="/balance/export.csv">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+    Выписка CSV
+  </a>
+</div>
+
+<div class="tiles">
+  <div class="tile dark span-2 wallet">
+    <div>
+      <div class="tile-label">Доступно</div>
+      <div class="tile-big" style="margin-top:6px">{{ user.balance | money }}</div>
+    </div>
+    <div class="wallet-tabs" role="tablist">
+      <input type="radio" name="wallet-mode" id="wm-in" checked>
+      <label for="wm-in">Пополнить</label>
+      <input type="radio" name="wallet-mode" id="wm-out">
+      <label for="wm-out">Вывести</label>
+
+      <form class="wallet-form in" method="post" action="/balance/topup">
+        <div class="wallet-row">
+          <label class="sr-only" for="amount-in">Сумма пополнения</label>
+          <input id="amount-in" name="amount" type="number" min="1" step="1" placeholder="Сумма, ₽" required>
+          <button class="btn btn-new-order">Пополнить</button>
+        </div>
+        <div class="chips">
+          {% for v in [1000, 5000, 10000, 50000] %}<button type="button" class="chip" data-fill="amount-in" data-value="{{ v }}">{{ v | money }}</button>{% endfor %}
+        </div>
+      </form>
+      <form class="wallet-form out" method="post" action="/balance/withdraw">
+        <div class="wallet-row">
+          <label class="sr-only" for="amount-out">Сумма вывода</label>
+          <input id="amount-out" name="amount" type="number" min="1" step="1" placeholder="Сумма, ₽" required>
+          <button class="btn secondary">Вывести</button>
+        </div>
+        <div class="chips">
+          <button type="button" class="chip" data-fill="amount-out" data-value="{{ user.balance|int }}">Всё — {{ user.balance | money }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="tile">
+    <div class="tile-label">Поступило в этом месяце</div>
+    <div class="stat" style="color:var(--success)">+{{ month_in | money }}</div>
+    <div class="tile-label">Списано: <b style="color:var(--ink)">{{ month_out | money }}</b></div>
+  </div>
+
+  <div class="tile sun">
+    <div class="tile-label" style="color:var(--ink-2)">В резерве</div>
+    <div class="stat">{{ reserved | money }}</div>
+    <div style="font-size:13px;font-weight:600">{{ reserved_note }}</div>
+  </div>
+</div>
+
+<section class="card flow">
+  <div class="row between wrap" style="margin-bottom:6px">
+    <h2 style="margin:0">Движение денег</h2>
+    <div class="legend">
+      <span><i style="background:var(--accent)"></i>Поступления</span>
+      <span><i style="background:var(--ink)"></i>Списания</span>
+    </div>
+  </div>
+  <div class="flow-chart" role="img" aria-label="Поступления и списания за последние 6 месяцев">
+    <div class="flow-axis" aria-hidden="true">
+      {% for t in flows.ticks %}<span>{{ t }}</span>{% endfor %}
+    </div>
+    <div class="flow-plot">
+      <div class="flow-grid" aria-hidden="true">{% for _ in range(5) %}<i></i>{% endfor %}</div>
+      {% for m in flows.months %}
+        <div class="flow-col {{ 'now' if loop.last }}" tabindex="0">
+          <div class="flow-bars">
+            {% if loop.last and m.inc %}<span class="flow-value">+{{ m.inc | money }}</span>{% endif %}
+            <span class="flow-bar in {{ 'empty' if not m.inc }}" style="height: {{ [m.inc_h, 2]|max if m.inc else 0 }}%; animation-delay: {{ loop.index0 * 0.07 }}s"></span>
+            <span class="flow-bar out {{ 'empty' if not m.out }}" style="height: {{ [m.out_h, 2]|max if m.out else 0 }}%; animation-delay: {{ loop.index0 * 0.07 + 0.04 }}s"></span>
+          </div>
+          <div class="flow-tip">
+            <b>{{ m.label }}</b>
+            <span><i class="dot-in"></i>Поступления: +{{ m.inc | money }}</span>
+            <span><i class="dot-out"></i>Списания: −{{ m.out | money }}</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <div></div>
+    <div class="flow-labels" aria-hidden="true">
+      {% for m in flows.months %}<span class="{{ 'now' if loop.last }}">{{ m.label }}</span>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<div class="row between wrap" style="margin-top:8px">
+  <div class="tabs">
+    {% for key, label in filters.items() %}<a href="?f={{ key }}" class="{{ 'active' if current == key }}">{{ label }}</a>{% endfor %}
+  </div>
+</div>
+
+{% for label, items in groups %}
+  <section class="notif-day">
+    <h2 class="notif-day-title">{{ label }}<span>{{ items|length }}</span></h2>
+    <div class="notif-list">
+      {% for t in items %}
+        {% set tone, icon = LOOK.get(t.kind.value, ("blue", "doc")) %}
+        <div class="notif" style="animation-delay: {{ [loop.index0 * 0.04, 0.4]|min }}s">
+          <span class="notif-icon {{ tone }}" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{{ ICONS[icon]|safe }}</svg>
+          </span>
+          <span class="notif-body">
+            <span class="notif-title">{{ labels[t.kind] }}</span>
+            <span class="notif-text">
+              {{ t.created_at | dt("%H:%M") }}
+              {% if t.order_id %} · <a href="{{ '/client/orders/%d' % t.order_id if user.role.value == 'client' else '/freelancer/work/%d' % t.order_id }}">заказ #{{ t.order_id }}</a>{% endif %}
+            </span>
+          </span>
+          <span class="tx-amount {{ 'plus' if t.amount > 0 else 'minus' }}">{{ "+" if t.amount > 0 else "−" }}{{ (t.amount if t.amount > 0 else -t.amount) | money }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% else %}
+  <div class="notif-empty">
+    <span class="notif-icon green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg></span>
+    <h2>{{ "Операций пока нет" if current == "all" else "Здесь пусто" }}</h2>
+    <p class="muted">Пополните счёт — и здесь появится история платежей, резервов и выплат.</p>
+  </div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll("[data-fill]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const input = document.getElementById(b.dataset.fill);
+      input.value = b.dataset.value;
+      input.focus();
+    })
+  );
+</script>
+{% endblock %}

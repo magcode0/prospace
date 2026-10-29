@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Категории{% endblock %}
+{% block content %}
+{% set staff_title = "Категории" %}{% include "staff/_nav.html" %}
+<div class="grid two">
+  <section class="card" style="padding:8px">
+    {% for cat, n in categories %}
+      <div class="cat-row">
+        <form method="post" action="/staff/categories/{{ cat.id }}/rename" class="row" style="flex:1;gap:8px">
+          <label class="sr-only" for="cat-{{ cat.id }}">Название</label>
+          <input id="cat-{{ cat.id }}" type="text" name="name" value="{{ cat.name }}" required>
+          <button class="btn secondary sm">Сохранить</button>
+        </form>
+        <span class="cat-meta"><code>{{ cat.slug }}</code> · {{ n }} заказ.</span>
+        {% if n == 0 %}
+          <form method="post" action="/staff/categories/{{ cat.id }}/delete" onsubmit="return confirm('Удалить категорию?')"><button class="btn danger sm" aria-label="Удалить {{ cat.name }}">Удалить</button></form>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </section>
+  <form class="card" method="post" action="/staff/categories" style="align-self:flex-start">
+    <h2>Новая категория</h2>
+    <div class="field"><label for="new-name">Название</label><input id="new-name" type="text" name="name" placeholder="Например: 3D и анимация" required></div>
+    <div class="field"><label for="new-slug">Код</label><input id="new-slug" type="text" name="slug" placeholder="3d" pattern="[a-z0-9-]{2,64}" required>
+      <div class="hint">Латиница, цифры, дефис. Код не меняется.</div></div>
+    <button class="btn block">Добавить</button>
+    <p class="muted" style="margin-top:12px;font-size:13px">Исполнители выбирают категории в профиле — по ним работает подбор. Категорию с заказами удалить нельзя, только переименовать.</p>
+  </form>
+</div>
+{% endblock %}

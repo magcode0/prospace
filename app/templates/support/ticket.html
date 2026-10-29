@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Обращение #{{ ticket.id }}{% endblock %}
+{% block content %}
+<a href="{{ '/staff/tickets' if user.is_staff and user.id != ticket.user_id else '/support' }}" class="muted">← Обращения</a>
+<h1 style="margin-top:8px">{{ ticket.subject }}</h1>
+<p class="muted">#{{ ticket.id }} · {{ ticket.user.full_name }} · {{ ticket.created_at | dt }}{% if ticket.order_id %} · заказ #{{ ticket.order_id }}{% endif %}</p>
+<div class="card chat-log" style="height:auto;max-height:60vh">
+  {% for m in messages %}
+    <div class="msg {{ 'mine' if m.sender_id == user.id }}"><div class="meta">{{ "Поддержка · " if m.sender.is_staff and m.sender_id != ticket.user_id }}{{ m.sender.full_name }} · {{ m.created_at | dt }}</div>{{ m.text }}</div>
+  {% endfor %}
+</div>
+{% if ticket.status.value != "closed" %}
+<form method="post" class="card">
+  <textarea name="text" placeholder="Ответ…"></textarea>
+  <div class="row" style="margin-top:8px"><button class="btn">Отправить</button>
+    <label class="muted"><input type="checkbox" name="close" value="true"> закрыть обращение</label></div>
+</form>
+{% else %}<p class="muted">Обращение закрыто.</p>{% endif %}
+{% endblock %}

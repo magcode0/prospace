@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+<div class="auth-wrap"><div class="card">
+  <h1>Вход</h1>
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+  <form method="post">
+    <div class="field"><label for="login">Username или email</label>
+      <input id="login" name="login" type="text" value="{{ login }}" required autofocus autocomplete="username"></div>
+    <div class="field"><label for="password">Пароль</label>
+      <input id="password" name="password" type="password" required autocomplete="current-password"></div>
+    <button class="btn block">Войти</button>
+  </form>
+  <hr>
+  <div class="row between"><a href="/password/forgot">Забыли пароль?</a><a href="/register">Регистрация</a></div>
+</div></div>
+{% endblock %}

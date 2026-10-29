@@ -1,0 +1,74 @@
+{% from "partials/macros.html" import avatar %}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ProSpace{% endblock %} — биржа фриланса</title>
+  <link rel="icon" href="/static/img/mark.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <a class="logo" href="/" aria-label="ProSpace — на главную"><img src="/static/img/mark.svg" alt=""><span>ProSpace</span></a>
+    {% if user %}
+      {% set path = request.url.path %}
+      <nav class="nav">
+        {% if user.role.value == "client" %}
+          <a href="/client/orders" class="{{ 'active' if path.startswith('/client') }}">Мои заказы</a>
+        {% else %}
+          <a href="/freelancer/orders" class="{{ 'active' if path.startswith('/freelancer') }}">Заказы</a>
+        {% endif %}
+        <a href="/chat" class="{{ 'active' if path.startswith('/chat') }}">Чат</a>
+        {% if user.is_staff %}<a href="/staff" class="{{ 'active' if path.startswith('/staff') }}">Админка</a>{% endif %}
+      </nav>
+      <div class="header-right">
+        {% if user.role.value == "client" %}
+          <a class="btn btn-new-order" href="/client/orders/new"><span class="plus">+</span> Новый заказ</a>
+        {% endif %}
+        <a class="balance" href="/balance" title="Баланс">{{ user.balance | money }}</a>
+        <a class="icon-btn" href="/notifications" title="Уведомления" aria-label="Уведомления">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="badge" id="notif-badge" {% if not unread %}hidden{% endif %}>{{ unread }}</span>
+        </a>
+        <a class="btn secondary support-btn" href="/support" title="Связаться с поддержкой">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+          <span>Поддержка</span>
+        </a>
+        <details class="menu">
+          <summary>{{ avatar(user) }}</summary>
+          <div class="menu-panel">
+            <div style="padding:8px 10px">
+              <b>{{ user.full_name }}</b><br>
+              <span class="role-tag">{{ "заказчик" if user.role.value == "client" else "исполнитель" }}</span>
+            </div>
+            <a href="/users/{{ user.username }}">Мой профиль</a>
+            <a href="/profile">Настройки профиля</a>
+            <a href="/notifications">История уведомлений</a>
+            <a href="/balance">Баланс и платежи</a>
+            <form method="post" action="/profile/role"><button>Переключиться на {{ "исполнителя" if user.role.value == "client" else "заказчика" }}</button></form>
+            <form method="post" action="/logout"><button>Выйти</button></form>
+          </div>
+        </details>
+      </div>
+    {% else %}
+      <nav class="nav"></nav>
+      <div class="header-right">
+        <a class="btn secondary" href="/login">Войти</a>
+        <a class="btn" href="/register">Регистрация</a>
+      </div>
+    {% endif %}
+  </div>
+</header>
+
+<main class="container">
+  {% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.text }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+
+<script src="/static/js/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

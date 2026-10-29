@@ -1,0 +1,13 @@
+{% set p = request.url.path %}
+<div class="notif-head">
+  <div>
+    <h1>{{ staff_title }}</h1>
+    <p class="muted" style="margin:0">Панель поддержки ProSpace</p>
+  </div>
+</div>
+<nav class="tabs staff-tabs" aria-label="Разделы панели">
+  {% for href, label in [("/staff", "Сводка"), ("/staff/users", "Пользователи"), ("/staff/orders", "Заказы"), ("/staff/moderation", "Модерация"),
+                          ("/staff/disputes", "Споры"), ("/staff/tickets", "Обращения"), ("/staff/categories", "Категории"), ("/staff/log", "Журнал")] %}
+    <a href="{{ href }}" class="{{ 'active' if (p == href if href == '/staff' else p.startswith(href)) }}">{{ label }}</a>
+  {% endfor %}
+</nav>

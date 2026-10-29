@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Новый пароль{% endblock %}
+{% block content %}
+<div class="auth-wrap"><div class="card">
+  <h1>Новый пароль</h1>
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+  <form method="post">
+    <div class="field"><label for="code">Код из письма</label><input id="code" name="code" type="text" inputmode="numeric" maxlength="6" required></div>
+    <div class="field"><label for="password">Новый пароль</label>
+      <input id="password" name="password" type="password" required data-pw="pw-rules" autocomplete="new-password">
+      <ul class="pw-rules" id="pw-rules">
+        <li data-rule="len">не короче 8 символов</li><li data-rule="lower">строчная буква</li>
+        <li data-rule="upper">заглавная буква</li><li data-rule="digit">цифра</li><li data-rule="special">спецсимвол</li>
+      </ul></div>
+    <div class="field"><label for="password2">Повторите пароль</label><input id="password2" name="password2" type="password" required></div>
+    <button class="btn block">Сохранить пароль</button>
+  </form>
+</div></div>
+{% endblock %}

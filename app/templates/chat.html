@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Чат · {{ order.title }}{% endblock %}
+{% block content %}
+<a href="/chat" class="muted">← Все чаты</a>
+<div class="row between" style="margin-top:8px"><h1>{{ partner.full_name }}</h1>
+  <a href="{{ '/client/orders/%d' % order.id if user.id == order.client_id else ('/freelancer/work/%d' % order.id if order.freelancer_id == user.id else '/freelancer/orders') }}">{{ order.title }}</a></div>
+<div class="card chat">
+  <div class="chat-log" id="log">
+    {% for m in messages %}
+      <div class="msg {{ 'mine' if m.sender_id == user.id }}"><div class="meta">{{ m.sender.full_name }} · {{ m.created_at | dt("%d.%m %H:%M") }}</div>{{ m.text }}</div>
+    {% endfor %}
+  </div>
+  <form class="chat-form" id="chat-form" method="post">
+    <textarea name="text" placeholder="Сообщение…" required></textarea>
+    <button class="btn">Отправить</button>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const log = document.getElementById("log"), form = document.getElementById("chat-form"), me = {{ user.id }};
+  const seen = new Set();
+  log.scrollTop = log.scrollHeight;
+  function add(m) {
+    if (seen.has(m.id)) return; seen.add(m.id);
+    const el = document.createElement("div");
+    el.className = "msg" + (m.sender_id === me ? " mine" : "");
+    const meta = document.createElement("div"); meta.className = "meta"; meta.textContent = m.sender + " · " + m.time;
+    el.append(meta, document.createTextNode(m.text));
+    log.appendChild(el); log.scrollTop = log.scrollHeight;
+  }
+  function connect() {
+    const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws/chat/{{ order.id }}/{{ freelancer_id }}");
+    const ping = setInterval(() => ws.readyState === 1 && ws.send("ping"), 25000);
+    ws.onmessage = (e) => { const d = JSON.parse(e.data); if (d.type === "chat") add(d); };
+    ws.onclose = (e) => { clearInterval(ping); if (e.code !== 4403) setTimeout(connect, 2000); };
+  }
+  connect();
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const body = new FormData(form);
+    if (!body.get("text").trim()) return;
+    form.text.value = "";
+    await fetch(form.action || location.pathname, { method: "POST", body, headers: { "X-Requested-With": "fetch" } });
+  });
+  form.text.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
+})();
+</script>
+{% endblock %}

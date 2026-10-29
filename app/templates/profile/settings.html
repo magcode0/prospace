@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import avatar %}
+{% block title %}Настройки профиля{% endblock %}
+{% block content %}
+<h1>Настройки профиля</h1>
+<div class="grid two">
+  <div>
+    <form method="post" action="/profile" class="card form wide">
+      <h2>Основное</h2>
+      <div class="grid half">
+        <div class="field"><label>Имя</label><input type="text" name="first_name" value="{{ user.first_name }}" required></div>
+        <div class="field"><label>Фамилия</label><input type="text" name="last_name" value="{{ user.last_name }}" required></div>
+      </div>
+      <div class="field"><label>О себе</label>
+        <textarea name="about" maxlength="200" data-counter="about-count">{{ user.about }}</textarea>
+        <div class="hint" id="about-count"></div></div>
+      {% if user.role.value == "freelancer" %}
+        <div class="field"><label>Навыки</label><input type="text" name="skills" value="{{ user.skills }}" placeholder="Через запятую"></div>
+        <div class="field"><label>Категории заказов</label>
+          <div class="checks">{% set mine = user.categories|map(attribute="id")|list %}
+            {% for c in categories %}<label><input type="checkbox" name="category_ids" value="{{ c.id }}" {{ 'checked' if c.id in mine }}> {{ c.name }}</label>{% endfor %}
+          </div></div>
+        <div class="grid half">
+          <div class="field"><label>Статус</label>
+            <select name="busy_status"><option value="free" {{ 'selected' if user.busy_status.value == 'free' }}>Свободен</option>
+              <option value="busy" {{ 'selected' if user.busy_status.value == 'busy' }}>Занят</option></select></div>
+          <div class="field"><label>Минимальная сумма заказа, ₽</label>
+            <input type="number" name="min_price" min="{{ settings.min_order_price|int }}" value="{{ user.min_price|int }}"></div>
+        </div>
+        <div class="field"><label>Рабочие часы (МСК) — вне их предложения не приходят</label>
+          <div class="row"><select name="work_hours_start">{% for h in range(24) %}<option value="{{ h }}" {{ 'selected' if h == user.work_hours_start }}>{{ "%02d:00"|format(h) }}</option>{% endfor %}</select>
+          —<select name="work_hours_end">{% for h in range(24) %}<option value="{{ h }}" {{ 'selected' if h == user.work_hours_end }}>{{ "%02d:00"|format(h) }}</option>{% endfor %}</select></div>
+          <div class="hint">Одинаковое начало и конец — круглосуточно.</div></div>
+      {% endif %}
+      <div class="field"><label><input type="checkbox" name="email_notifications" value="true" {{ 'checked' if user.email_notifications }}> Дублировать уведомления на email</label></div>
+      <button class="btn">Сохранить</button>
+    </form>
+
+    <div class="card form wide" id="password">
+      <h2>Смена пароля</h2>
+      <p class="muted">Для смены пароля система отправит код подтверждения на {{ user.email }}.</p>
+      <form method="post" action="/profile/password/code"><button class="btn secondary">Получить код</button></form>
+      <form method="post" action="/profile/password" style="margin-top:16px">
+        <div class="field"><label>Текущий пароль</label><input type="password" name="current" required autocomplete="current-password"></div>
+        <div class="field"><label>Код из письма</label><input type="text" name="code" inputmode="numeric" maxlength="6" required></div>
+        <div class="field"><label>Новый пароль</label><input type="password" name="password" required data-pw="pw-rules2" autocomplete="new-password">
+          <ul class="pw-rules" id="pw-rules2"><li data-rule="len">не короче 8 символов</li><li data-rule="lower">строчная буква</li>
+            <li data-rule="upper">заглавная буква</li><li data-rule="digit">цифра</li><li data-rule="special">спецсимвол</li></ul></div>
+        <div class="field"><label>Повторите пароль</label><input type="password" name="password2" required></div>
+        <button class="btn">Изменить пароль</button>
+      </form>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h3>Фото</h3>
+      <div class="row">{{ avatar(user, "lg") }}
+        <form method="post" action="/profile/avatar" enctype="multipart/form-data" class="stack">
+          <input type="file" name="avatar" accept="image/*" required>
+          <button class="btn secondary sm">Загрузить</button></form></div>
+    </div>
+    <div class="card">
+      <h3>Кабинет</h3>
+      <p>Сейчас: <b>{{ "заказчик" if user.role.value == "client" else "исполнитель" }}</b></p>
+      <form method="post" action="/profile/role"><button class="btn secondary block">Переключиться на «{{ "Исполнитель" if user.role.value == "client" else "Заказчик" }}»</button></form>
+    </div>
+    <div class="card">
+      <dl class="kv" style="grid-template-columns:1fr">
+        <dt>Username</dt><dd>{{ user.username }}</dd>
+        <dt>Email</dt><dd>{{ user.email }}</dd>
+        <dt>Последний заход</dt><dd>{{ user.last_seen_at | dt }}</dd>
+        <dt>Дата регистрации</dt><dd>{{ user.created_at | dt("%d.%m.%Y") }}</dd>
+      </dl>
+      <a href="/users/{{ user.username }}">Как профиль видят другие →</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

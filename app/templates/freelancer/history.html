@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status, offer_status %}
+{% block title %}История заказов{% endblock %}
+{% block content %}
+{% include "freelancer/_tabs.html" %}
+{% for o in orders %}
+  <a class="order-item" href="/freelancer/work/{{ o.id }}">
+    <div><h3>{{ o.title }}</h3><div class="row wrap">{{ status(o) }}<small>закрыт {{ o.closed_at | dt }}</small></div></div>
+    <div class="price">{{ o.price | money }}</div>
+  </a>
+{% else %}<div class="card muted">Завершённых заказов пока нет.</div>{% endfor %}
+{% if offers %}
+<h2 style="margin-top:28px">Прошлые предложения</h2>
+<table class="table card"><tr><th>Заказ</th><th>Получено</th><th>Итог</th><th class="num">Сумма</th></tr>
+{% for o in offers %}<tr><td>{{ o.order.title }}</td><td>{{ o.sent_at | dt }}</td><td>{{ offer_status(o) }}</td><td class="num">{{ o.order.price | money }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+{% endblock %}

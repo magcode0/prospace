@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import avatar, rating, online, status, tags %}
+{% block title %}{{ target.full_name }}{% endblock %}
+{% block content %}
+{% set staff_title = target.full_name %}{% include "staff/_nav.html" %}
+<div><a href="/staff/users" class="muted">← Все пользователи</a></div>
+
+<div class="tiles" style="margin-top:14px">
+  <div class="tile span-2">
+    <div class="row" style="gap:16px;align-items:flex-start">
+      {{ avatar(target, "lg") }}
+      <div style="flex:1;min-width:0">
+        <h2 style="margin:0">{{ target.full_name }}</h2>
+        <div class="muted">@{{ target.username }} · {{ target.email }} · ID {{ target.id }}</div>
+        <div class="row wrap" style="margin-top:10px;gap:8px">
+          <span class="status">{{ "Исполнитель" if target.role.value == "freelancer" else "Заказчик" }}</span>
+          {% if target.is_staff %}<span class="status completed">Сотрудник</span>{% endif %}
+          {% if target.is_blocked %}<span class="status declined">Заблокирован</span>{% endif %}
+          {% if not target.is_email_verified %}<span class="status moderation">Email не подтверждён</span>{% endif %}
+        </div>
+        <div style="margin-top:10px;font-size:14px">{{ online(target) }} · {{ rating(target) }} · выполнено {{ target.completed_orders }} · с нами с {{ target.created_at | dt("%d.%m.%Y") }}</div>
+        {% if target.is_blocked and target.blocked_reason %}<div class="flash error" style="margin:10px 0 0">Причина блокировки: {{ target.blocked_reason }}</div>{% endif %}
+      </div>
+    </div>
+    <a href="/users/{{ target.username }}">Публичный профиль →</a>
+  </div>
+  <div class="tile dark">
+    <div class="tile-label">Баланс</div>
+    <div class="stat">{{ target.balance | money }}</div>
+    <div class="tile-label">Откликов: {{ target.response_credits }} · реакция {{ target.offers_reacted }}/{{ target.offers_received }}</div>
+  </div>
+  <div class="tile">
+    <div class="tile-label">Доступ</div>
+    {% if target.is_blocked %}
+      <form method="post" action="/staff/users/{{ target.id }}/unblock"><button class="btn success block">Разблокировать</button></form>
+    {% else %}
+      <form method="post" action="/staff/users/{{ target.id }}/block" class="stack" onsubmit="return confirm('Заблокировать пользователя? Он не сможет войти.')">
+        <input type="text" name="reason" placeholder="Причина (увидит пользователь)" aria-label="Причина блокировки">
+        <button class="btn danger block">Заблокировать</button>
+      </form>
+    {% endif %}
+    <form method="post" action="/staff/users/{{ target.id }}/staff"><button class="btn secondary sm block">{{ "Снять права сотрудника" if target.is_staff else "Сделать сотрудником" }}</button></form>
+  </div>
+</div>
+
+<div class="grid two">
+  <div>
+    <section class="card">
+      <h2>Заказы</h2>
+      <div class="mini-list">
+        {% for o in orders %}
+          <a href="/staff/orders/{{ o.id }}"><span><b>#{{ o.id }} {{ o.title }}</b><small>{{ "заказчик" if o.client_id == target.id else "исполнитель" }} · {{ o.price | money }} · {{ o.created_at | dt("%d.%m.%Y") }}</small></span>{{ status(o) }}</a>
+        {% else %}<p class="muted">Заказов нет.</p>{% endfor %}
+      </div>
+    </section>
+    <section class="card">
+      <h2>Последние операции</h2>
+      <div class="mini-list">
+        {% for t in txs %}
+          <div><span><b>{{ labels[t.kind] }}</b><small>{{ t.created_at | dt }}{% if t.order_id %} · <a href="/staff/orders/{{ t.order_id }}">заказ #{{ t.order_id }}</a>{% endif %}</small></span>
+            <span class="tx-amount {{ 'plus' if t.amount > 0 else 'minus' }}">{{ "+" if t.amount > 0 else "−" }}{{ (t.amount if t.amount > 0 else -t.amount) | money }}</span></div>
+        {% else %}<p class="muted">Операций нет.</p>{% endfor %}
+      </div>
+    </section>
+  </div>
+  <div>
+    <form class="card" method="post" action="/staff/users/{{ target.id }}/balance" onsubmit="return confirm('Провести корректировку баланса?')">
+      <h2>Корректировка баланса</h2>
+      <div class="radio-cards" style="margin-bottom:12px">
+        <label><input type="radio" name="direction" value="credit" checked><b>Начислить</b></label>
+        <label><input type="radio" name="direction" value="debit"><b>Списать</b></label>
+      </div>
+      <div class="field"><label for="adj-amount">Сумма, ₽</label><input id="adj-amount" type="number" name="amount" min="0.01" step="0.01" required></div>
+      <div class="field"><label for="adj-reason">Причина</label><input id="adj-reason" type="text" name="reason" maxlength="200" placeholder="Например: компенсация по обращению #12" required>
+        <div class="hint">Пользователь получит уведомление с этой причиной. Действие попадёт в журнал.</div></div>
+      <button class="btn block">Провести</button>
+    </form>
+    <section class="card">
+      <h2>История действий поддержки</h2>
+      <div class="mini-list">
+        {% for a in actions %}<div><span><b>{{ action_labels.get(a.action, a.action) }}</b><small>{{ a.staff.full_name }} · {{ a.created_at | dt }}{% if a.details %} · {{ a.details }}{% endif %}</small></span></div>
+        {% else %}<p class="muted">Действий не было.</p>{% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

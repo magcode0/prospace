@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Ошибка {{ code }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:560px">
+  <h1>{{ {404: "Страница не найдена", 403: "Доступ запрещён"}.get(code, "Ошибка " ~ code) }}</h1>
+  <p class="muted">{{ detail }}</p>
+  <a class="btn secondary" href="/">На главную</a>
+</div>
+{% endblock %}

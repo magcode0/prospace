@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Биржа фриланса, где сделка защищена до последнего рубля</h1>
+  <p>ProSpace сам подбирает исполнителей под ваш заказ, держит оплату на безопасной сделке и разбирает споры за 24 часа.</p>
+  <div class="row">
+    <a class="btn btn-new-order" href="/register"><span class="plus">+</span> Разместить заказ</a>
+    <a class="btn secondary" href="/register">Стать исполнителем</a>
+  </div>
+  <div class="features">
+    <div class="card"><h3>Умный подбор</h3><p class="muted">10 исполнителей на заказ: 7 опытных и 3 новичка. Предложение живёт 2 часа — слот сразу переходит следующему.</p></div>
+    <div class="card"><h3>Безопасная сделка</h3><p class="muted">Сумма заказа резервируется при размещении и переходит исполнителю только после приёмки работы.</p></div>
+    <div class="card"><h3>Прозрачные условия</h3><p class="muted">100 ₽ за размещение, 50 ₽ за отклик (вернём, если вас не выбрали), комиссия 5% с выполненного заказа.</p></div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% macro avatar(u, size="") -%}
+  {%- if u.avatar -%}
+    <img class="avatar {{ size }}" src="{{ u.avatar }}" alt="{{ u.full_name }}">
+  {%- else -%}
+    <span class="avatar {{ size }}">{{ u.first_name[:1] }}{{ u.last_name[:1] }}</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% set STATUS = {
+  "moderation": "На модерации", "rejected": "Отклонён модерацией", "open": "Подбор исполнителя",
+  "in_progress": "В работе", "submitted": "Работа на проверке", "revision": "На доработке",
+  "declined": "Отклонён · окно спора", "disputed": "Спор в поддержке", "completed": "Выполнен", "cancelled": "Снят",
+} %}
+
+{% macro status(order) -%}
+  <span class="status {{ order.status.value }}">{{ STATUS[order.status.value] }}</span>
+{%- endmacro %}
+
+{% macro offer_status(o) -%}
+  {%- set L = {"sent": "Ждёт ответа", "responded": "Отклик отправлен", "declined": "Вы отказались", "expired": "Время истекло",
+               "rejected": "Заказчик отказал", "accepted": "Вы выбраны", "closed": "Подбор завершён"} -%}
+  <span class="status">{{ L[o.status.value] }}</span>
+{%- endmacro %}
+
+{% macro online(u) -%}
+  <span><span class="online-dot {{ 'on' if is_online(u) }}"></span>{{ seen_text(u) }}</span>
+{%- endmacro %}
+
+{% macro rating(u) -%}
+  {%- if u.rating_count -%}★ {{ "%.1f"|format(u.rating) }} <small>({{ u.rating_count }})</small>{%- else -%}<small>нет оценок</small>{%- endif -%}
+{%- endmacro %}
+
+{% macro tags(s) -%}
+  {%- for t in s.split(",") if t.strip() %}<span class="tag">{{ t.strip() }}</span>{% endfor -%}
+{%- endmacro %}
+
+{% macro review_form(action) -%}
+<form method="post" action="{{ action }}" class="form">
+  <div class="field"><label>Оценка</label>
+    <select name="score">{% for i in [5,4,3,2,1] %}<option value="{{ i }}">{{ "★" * i }}</option>{% endfor %}</select></div>
+  <div class="field"><label>Отзыв</label><textarea name="text" maxlength="1000"></textarea></div>
+  <button class="btn">Оставить отзыв</button>
+</form>
+{%- endmacro %}

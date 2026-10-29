@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status, avatar %}
+{% block title %}Панель поддержки{% endblock %}
+{% block content %}
+{% set staff_title = "Сводка" %}{% include "staff/_nav.html" %}
+
+<div class="tiles">
+  <div class="tile dark span-2">
+    <div class="tile-split">
+      <div>
+        <div class="tile-label">Доход биржи · всего</div>
+        <div class="tile-big">{{ revenue_total | money }}</div>
+        <div class="tile-label">В этом месяце: <b style="color:#fff">+{{ revenue_month | money }}</b></div>
+      </div>
+      <div class="tile-actions" style="align-self:flex-end;flex-direction:column">
+        <a href="/staff/report/revenue.png">Отчёт PNG</a>
+        <a class="ghost" href="/staff/report/statuses.png">Статусы PNG</a>
+      </div>
+    </div>
+  </div>
+  <a class="tile" href="/staff/users">
+    <div class="tile-label">Пользователи</div>
+    <div class="tile-big">{{ c.users }}</div>
+    <div class="tile-label"><span class="online-dot on"></span>{{ c.online }} онлайн · +{{ c.users_week }} за неделю</div>
+  </a>
+  <div class="tile sun">
+    <div class="tile-label" style="color:var(--ink-2)">На безопасной сделке</div>
+    <div class="stat">{{ c.escrow | money }}</div>
+    <div style="font-size:13px;font-weight:600">{{ c.orders_active }} активных заказов</div>
+  </div>
+</div>
+
+<div class="tiles">
+  <a class="tile {{ 'accent' if c.moderation }}" href="/staff/moderation">
+    <div class="tile-label">Ждут модерации</div><div class="tile-big">{{ c.moderation }}</div>
+    <div class="tile-label">{{ "Проверьте очередь →" if c.moderation else "Очередь пуста" }}</div>
+  </a>
+  <a class="tile" href="/staff/disputes" {% if c.disputes_overdue %}style="box-shadow: inset 0 0 0 2px var(--danger)"{% endif %}>
+    <div class="tile-label">Открытые споры</div><div class="tile-big">{{ c.disputes }}</div>
+    <div class="tile-label" {% if c.disputes_overdue %}style="color:var(--danger);font-weight:700"{% endif %}>{{ "Просрочено: %d" % c.disputes_overdue if c.disputes_overdue else "Срок — 24 часа" }}</div>
+  </a>
+  <a class="tile" href="/staff/tickets">
+    <div class="tile-label">Обращения без ответа</div><div class="tile-big">{{ c.tickets }}</div>
+    <div class="tile-label">Ответьте в тикете</div>
+  </a>
+  <a class="tile" href="/staff/users?role=freelancer">
+    <div class="tile-label">Исполнителей</div><div class="tile-big">{{ c.freelancers }}</div>
+    <div class="tile-label">из {{ c.users }} пользователей</div>
+  </a>
+</div>
+
+<div class="grid two">
+  <section class="card flow" style="margin:0">
+    <div class="row between wrap" style="margin-bottom:6px">
+      <h2 style="margin:0">Доход по месяцам</h2>
+      <div class="legend"><span><i style="background:var(--accent)"></i>Комиссии и платы</span></div>
+    </div>
+    <div class="flow-chart" role="img" aria-label="Доход биржи за 6 месяцев">
+      <div class="flow-axis" aria-hidden="true">{% for t in chart.ticks %}<span>{{ t }}</span>{% endfor %}</div>
+      <div class="flow-plot">
+        <div class="flow-grid" aria-hidden="true">{% for _ in range(5) %}<i></i>{% endfor %}</div>
+        {% for m in chart.months %}
+          <div class="flow-col {{ 'now' if loop.last }}" tabindex="0">
+            <div class="flow-bars">
+              {% if loop.last and m.value %}<span class="flow-value">+{{ m.value | money }}</span>{% endif %}
+              <span class="flow-bar in {{ 'empty' if not m.value }}" style="width:min(46%, 34px); height: {{ [m.h, 2]|max if m.value else 0 }}%; animation-delay: {{ loop.index0 * 0.07 }}s"></span>
+            </div>
+            <div class="flow-tip"><b>{{ m.label }}</b><span><i class="dot-in"></i>+{{ m.value | money }}</span></div>
+          </div>
+        {% endfor %}
+      </div>
+      <div></div>
+      <div class="flow-labels" aria-hidden="true">{% for m in chart.months %}<span class="{{ 'now' if loop.last }}">{{ m.label }}</span>{% endfor %}</div>
+    </div>
+  </section>
+
+  <section class="card" style="margin:0">
+    <h2>Заказы по статусам</h2>
+    <div class="hbars">
+      {% for label, key, n in statuses %}
+        <a class="hbar" href="/staff/orders">
+          <span class="hbar-label">{{ label }}</span>
+          <span class="hbar-track"><span class="hbar-fill st-{{ key }}" style="width: {{ (n / status_max * 100)|round(1) }}%; animation-delay: {{ loop.index0 * 0.06 }}s"></span></span>
+          <b>{{ n }}</b>
+        </a>
+      {% else %}<p class="muted">Заказов пока нет.</p>{% endfor %}
+    </div>
+  </section>
+</div>
+
+<div class="grid half" style="margin-top:16px">
+  <section class="card" style="margin:0">
+    <div class="row between"><h2 style="margin:0">Новые заказы</h2><a href="/staff/orders">Все →</a></div>
+    <div class="mini-list">
+      {% for o in recent_orders %}
+        <a href="/staff/orders/{{ o.id }}"><span><b>#{{ o.id }} {{ o.title }}</b><small>{{ o.client.full_name }} · {{ o.created_at | dt }}</small></span>{{ status(o) }}</a>
+      {% else %}<p class="muted">Пока нет.</p>{% endfor %}
+    </div>
+  </section>
+  <section class="card" style="margin:0">
+    <div class="row between"><h2 style="margin:0">Новые пользователи</h2><a href="/staff/users">Все →</a></div>
+    <div class="mini-list">
+      {% for u in recent_users %}
+        <a href="/staff/users/{{ u.id }}"><span class="row" style="gap:10px">{{ avatar(u) }}<span><b>{{ u.full_name }}</b><small>@{{ u.username }} · {{ "исполнитель" if u.role.value == "freelancer" else "заказчик" }}</small></span></span><small>{{ u.created_at | dt("%d.%m") }}</small></a>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

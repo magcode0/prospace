@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Обращения{% endblock %}
+{% block content %}
+{% set staff_title = "Обращения" %}{% include "staff/_nav.html" %}
+<table class="table card" style="padding:0">
+  <tr><th>#</th><th>Тема</th><th>Пользователь</th><th>Создано</th><th>Статус</th></tr>
+  {% for t in tickets %}
+    <tr><td>{{ t.id }}</td><td><a href="/support/{{ t.id }}">{{ t.subject }}</a></td><td>{{ t.user.full_name }}</td><td>{{ t.created_at | dt }}</td>
+      <td>{{ {"open": "Ждёт ответа", "answered": "Отвечено", "closed": "Закрыто"}[t.status.value] }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Обращений нет.</td></tr>{% endfor %}
+</table>
+{% endblock %}

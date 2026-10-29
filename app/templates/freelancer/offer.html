@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import avatar, online, rating, tags, offer_status %}
+{% block title %}{{ order.title }}{% endblock %}
+{% block content %}
+<a href="/freelancer/orders" class="muted">← Доступные заказы</a>
+<div class="row between" style="margin-top:8px"><h1>{{ order.title }}</h1>{{ offer_status(offer) }}</div>
+<div class="grid two">
+  <div class="card">
+    <dl class="kv">
+      <dt>Сумма</dt><dd><b>{{ order.price | money }}</b> <small class="muted">вы получите {{ (order.price * (1 - settings.commission_rate)) | money }} (−5%)</small></dd>
+      <dt>Срок</dt><dd>{{ order.deadline | dt }}</dd>
+      <dt>Категория</dt><dd>{{ order.category.name }}</dd>
+      <dt>Навыки</dt><dd>{{ tags(order.skills) or "—" }}</dd>
+    </dl>
+    <hr><div style="white-space:pre-wrap">{{ order.description }}</div>
+  </div>
+  <div>
+    <div class="card">
+      <h3>Заказчик</h3>
+      <div class="row">{{ avatar(order.client) }}<div><a href="/users/{{ order.client.username }}">{{ order.client.full_name }}</a><br><small>{{ rating(order.client) }} · {{ online(order.client) }}</small></div></div>
+      <a class="btn secondary block" style="margin-top:12px" href="/users/{{ order.client.username }}">Посмотреть профиль</a>
+    </div>
+    {% if offer.status.value == "sent" %}
+    <div class="card">
+      <h3>Откликнуться</h3>
+      <p class="muted">Ответьте до <b>{{ offer.expires_at | dt }}</b>. Отклик стоит {{ settings.response_fee | money }} — вернём, если заказчик выберет другого. Осталось откликов: {{ user.response_credits }}.</p>
+      <form method="post" action="/freelancer/offers/{{ offer.id }}/respond">
+        <textarea name="message" placeholder="Коротко: опыт, подход, сроки" required></textarea>
+        <button class="btn block" style="margin-top:8px">Откликнуться за {{ settings.response_fee | money }}</button>
+      </form>
+      <form method="post" action="/freelancer/offers/{{ offer.id }}/decline" style="margin-top:8px"><button class="btn danger block">Отказаться от заказа</button></form>
+    </div>
+    {% elif offer.status.value == "responded" %}
+    <div class="card"><p>Ваш отклик отправлен {{ offer.responded_at | dt }}.</p><a class="btn secondary block" href="/chat/{{ order.id }}/{{ user.id }}">Чат с заказчиком</a></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40" role="img" aria-label="ProSpace">
+  <rect width="40" height="40" rx="13" fill="#3D5AFE"/>
+  <path fill="#ffffff" fill-rule="evenodd" d="M11 8h10a8 8 0 0 1 0 16h-4.5v8H11zM16.5 13v6H21a3 3 0 0 0 0-6z"/>
+  <circle cx="30" cy="30" r="3.4" fill="#FFD84D"/>
+  <text x="50" y="27.5" font-family="Onest, Inter, 'Helvetica Neue', Arial, sans-serif" font-size="21" font-weight="800" letter-spacing="-0.4" fill="#12152A">ProSpace</text>
+</svg>

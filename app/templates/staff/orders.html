@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status %}
+{% block title %}Заказы{% endblock %}
+{% block content %}
+{% set staff_title = "Заказы" %}{% include "staff/_nav.html" %}
+
+<form class="card filter-bar" method="get">
+  <input type="hidden" name="f" value="{{ f }}">
+  <label class="sr-only" for="q">Поиск</label>
+  <input id="q" type="text" name="q" value="{{ q }}" placeholder="Название заказа или номер">
+  <button class="btn">Найти</button>
+</form>
+<div class="tabs">
+  {% for key, label in filters.items() %}<a href="?f={{ key }}&q={{ q|urlencode }}" class="{{ 'active' if f == key }}">{{ label }}</a>{% endfor %}
+</div>
+
+<div class="table-box">
+<table class="table">
+  <thead><tr><th>№</th><th>Заказ</th><th>Заказчик</th><th>Исполнитель</th><th>Статус</th><th class="num">Сумма</th><th>Создан</th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+    <tr>
+      <td>#{{ o.id }}</td>
+      <td><a href="/staff/orders/{{ o.id }}"><b>{{ o.title }}</b></a><br><small>{{ o.category.name }}</small></td>
+      <td><a href="/staff/users/{{ o.client_id }}">{{ o.client.full_name }}</a></td>
+      <td>{% if o.freelancer %}<a href="/staff/users/{{ o.freelancer_id }}">{{ o.freelancer.full_name }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td>{{ status(o) }}</td>
+      <td class="num"><b>{{ o.price | money }}</b></td>
+      <td>{{ o.created_at | dt("%d.%m.%Y") }}</td>
+    </tr>
+  {% else %}<tr><td colspan="7" class="muted">Заказов не найдено.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

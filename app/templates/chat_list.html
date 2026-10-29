@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import avatar %}
+{% block title %}Чат по заказам{% endblock %}
+{% block content %}
+<h1>Чат по заказам</h1>
+{% for t in threads %}
+  {% set partner = t.freelancer if t.order.client_id == user.id else t.order.client %}
+  <a class="order-item" href="/chat/{{ t.order_id }}/{{ t.freelancer_id }}">
+    <div class="row">{{ avatar(partner) }}<div><b>{{ partner.full_name }}</b><br><small>{{ t.order.title }}</small></div></div>
+    <small>{{ "исполнитель" if t.status.value == "accepted" else "отклик" }}</small>
+  </a>
+{% else %}<div class="card muted">Переписка появится после первого отклика.</div>{% endfor %}
+{% endblock %}

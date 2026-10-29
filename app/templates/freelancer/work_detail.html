@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status, avatar, online, tags, review_form %}
+{% block title %}{{ order.title }}{% endblock %}
+{% block content %}
+<a href="/freelancer/orders/work" class="muted">← Заказы в работе</a>
+<div class="row between" style="margin-top:8px"><h1>{{ order.title }}</h1>{{ status(order) }}</div>
+<div class="grid two">
+  <div class="card">
+    <dl class="kv">
+      <dt>Сумма</dt><dd><b>{{ order.price | money }}</b> <small class="muted">к выплате {{ (order.price * (1 - settings.commission_rate)) | money }}</small></dd>
+      <dt>Срок</dt><dd>{{ order.deadline | dt }}</dd>
+      <dt>Навыки</dt><dd>{{ tags(order.skills) or "—" }}</dd>
+    </dl>
+    <hr><div style="white-space:pre-wrap">{{ order.description }}</div>
+  </div>
+  <div>
+    <div class="card">
+      <h3>Заказчик</h3>
+      <div class="row">{{ avatar(order.client) }}<div><a href="/users/{{ order.client.username }}">{{ order.client.full_name }}</a><br><small>{{ online(order.client) }}</small></div></div>
+      <a class="btn secondary block" style="margin-top:12px" href="/chat/{{ order.id }}/{{ user.id }}">Чат по заказу</a>
+    </div>
+    <div class="card stack">
+      {% set s = order.status.value %}
+      {% if s in ("in_progress", "revision") %}
+        <h3>Сдать работу</h3>
+        <form method="post" action="/freelancer/work/{{ order.id }}/submit">
+          <textarea name="text" placeholder="Что сделано, ссылка на результат" required></textarea>
+          <button class="btn block" style="margin-top:8px">Отправить работу</button></form>
+      {% elif s == "submitted" %}<p class="muted">Работа на проверке у заказчика.</p>
+      {% elif s == "declined" %}
+        {% if order.dispute_window_until and order.dispute_window_until > now %}
+          <h3>Обжаловать решение</h3>
+          <p class="muted">Окно спора открыто до <b>{{ order.dispute_window_until | dt }}</b>. Поддержка рассмотрит обращение за 24 часа.</p>
+          <form method="post" action="/freelancer/work/{{ order.id }}/dispute">
+            <textarea name="reason" placeholder="Опишите, что было сделано и почему решение несправедливо" required></textarea>
+            <button class="btn danger block" style="margin-top:8px">Открыть спор</button></form>
+        {% else %}<p class="muted">Окно спора закрыто.</p>{% endif %}
+      {% elif s == "disputed" and dispute %}<p class="muted">Спор на рассмотрении до {{ dispute.due_at | dt }}.</p>
+      {% elif s == "completed" %}<p>Работа принята, оплата зачислена.</p>
+        {% if not reviewed %}{{ review_form("/freelancer/work/%d/review" % order.id) }}{% endif %}
+      {% endif %}
+      {% if dispute and dispute.resolution %}<p><b>Решение поддержки:</b> {{ dispute.resolution }}</p>{% endif %}
+      <a class="btn secondary block" href="/support?order={{ order.id }}">Связаться с поддержкой</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

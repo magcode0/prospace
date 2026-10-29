@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Регистрация{% endblock %}
+{% macro field(name, label, type="text", hint=None) %}
+  <div class="field {{ 'invalid' if errors.get(name) }}">
+    <label for="{{ name }}">{{ label }}</label>
+    <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ form.get(name, '') if type != 'password' }}" required>
+    {% if hint %}<div class="hint">{{ hint }}</div>{% endif %}
+    {% if errors.get(name) %}<div class="err">{{ errors[name] }}</div>{% endif %}
+  </div>
+{% endmacro %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="card">
+    <h1>Регистрация</h1>
+    <form method="post" novalidate>
+      <div class="grid half">
+        {{ field("first_name", "Имя *") }}
+        {{ field("last_name", "Фамилия *") }}
+      </div>
+      {{ field("email", "Email *", "email", "Пришлём код подтверждения") }}
+      {{ field("username", "Username *", hint="Уникальный: латиница, цифры и _") }}
+      <div class="field {{ 'invalid' if errors.get('password') }}">
+        <label for="password">Пароль *</label>
+        <input id="password" name="password" type="password" required data-pw="pw-rules" autocomplete="new-password">
+        <ul class="pw-rules" id="pw-rules">
+          <li data-rule="len">не короче 8 символов</li><li data-rule="lower">строчная буква</li>
+          <li data-rule="upper">заглавная буква</li><li data-rule="digit">цифра</li><li data-rule="special">спецсимвол</li>
+        </ul>
+        {% if errors.get('password') %}<div class="err">{{ errors.password }}</div>{% endif %}
+      </div>
+      {{ field("password2", "Повторите пароль *", "password") }}
+      <div class="field {{ 'invalid' if errors.get('role') }}">
+        <label>Кто вы? *</label>
+        <div class="radio-cards">
+          <label><input type="radio" name="role" value="client" {{ 'checked' if form.get('role') == 'client' }}><b>Заказчик</b><br><small>Размещаю заказы</small></label>
+          <label><input type="radio" name="role" value="freelancer" {{ 'checked' if form.get('role') == 'freelancer' }}><b>Исполнитель</b><br><small>Выполняю заказы</small></label>
+        </div>
+        {% if errors.get('role') %}<div class="err">{{ errors.role }}</div>{% endif %}
+      </div>
+      <button class="btn block">Зарегистрироваться</button>
+    </form>
+    <hr><p class="muted">Уже есть аккаунт? <a href="/login">Войти</a></p>
+  </div>
+</div>
+{% endblock %}

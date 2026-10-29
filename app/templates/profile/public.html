@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import avatar, online, rating, tags %}
+{% block title %}{{ target.full_name }}{% endblock %}
+{% block content %}
+<div class="grid two">
+  <div>
+    <div class="card">
+      <div class="row">{{ avatar(target, "lg") }}
+        <div><h1 style="margin:0">{{ target.full_name }}</h1>
+          <div class="muted">@{{ target.username }} · {{ "исполнитель" if target.role.value == "freelancer" else "заказчик" }}</div>
+          <div style="margin-top:6px">{{ online(target) }}</div></div></div>
+      <hr>
+      <dl class="kv">
+        <dt>О себе</dt><dd>{{ target.about or "—" }}</dd>
+        {% if target.role.value == "freelancer" %}
+          <dt>Статус</dt><dd><span class="status {{ 'completed' if target.busy_status.value == 'free' else 'declined' }}">{{ "свободен" if target.busy_status.value == "free" else "занят" }}</span></dd>
+          <dt>Навыки</dt><dd>{{ tags(target.skills) or "—" }}</dd>
+          <dt>Выполнено заказов</dt><dd>{{ target.completed_orders }}</dd>
+        {% else %}
+          <dt>Размещено заказов</dt><dd>{{ placed }}</dd>
+        {% endif %}
+        <dt>Рейтинг</dt><dd>{{ rating(target) }}</dd>
+        <dt>Дата регистрации</dt><dd>{{ target.created_at | dt("%d.%m.%Y") }}</dd>
+      </dl>
+    </div>
+    {% if target.role.value == "freelancer" %}
+      {% set p = progress(target) %}
+      <div class="card">
+        <div class="row" style="gap:16px">
+          <div class="stat" style="color:var(--accent)">ур. {{ p.level }}</div>
+          <div style="flex:1"><div class="xp"><span style="width: {{ p.pct }}%"></span></div></div>
+        </div>
+        <div class="achievements" style="margin-top:14px">
+          {% for title, got in p.achievements if got %}<span class="achievement got">★ {{ title }}</span>{% else %}<span class="muted">Достижения появятся после первых заказов</span>{% endfor %}
+        </div>
+      </div>
+    {% endif %}
+    <h2>Отзывы</h2>
+    {% for r in reviews %}
+      <div class="card tight"><div class="row between"><b>{{ r.author.full_name }}</b><span>{{ "★" * r.score }}<span class="muted">{{ "★" * (5 - r.score) }}</span></span></div>
+        {% if r.text %}<p style="margin:6px 0 0">{{ r.text }}</p>{% endif %}<small>{{ r.created_at | dt("%d.%m.%Y") }}</small></div>
+    {% else %}<div class="card muted">Отзывов пока нет.</div>{% endfor %}
+  </div>
+</div>
+{% endblock %}

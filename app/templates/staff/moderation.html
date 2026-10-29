@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Модерация{% endblock %}
+{% block content %}
+{% set staff_title = "Модерация заказов" %}{% include "staff/_nav.html" %}
+<p class="muted">Здесь заказы, которые автоматическая проверка (правила{{ " + ИИ-агент" if settings.ai_moderation_enabled }}) отправила на ручную проверку или ещё не обработала.</p>
+{% for o in orders %}
+  <div class="card">
+    <div class="row between"><h3>#{{ o.id }} {{ o.title }}</h3><b>{{ o.price | money }}</b></div>
+    <small class="muted">{{ o.client.full_name }} · {{ o.category.name }} · {{ o.created_at | dt }}</small>
+    {% if o.moderation_note %}<div class="flash" style="margin-top:8px">Агент: {{ o.moderation_note }}</div>{% endif %}
+    <p style="white-space:pre-wrap;margin-top:8px">{{ o.description }}</p>
+    <form method="post" action="/staff/moderation/{{ o.id }}" class="row wrap">
+      <input type="text" name="reason" placeholder="Причина отказа" style="max-width:360px">
+      <button class="btn success sm" name="decision" value="approve">Одобрить</button>
+      <button class="btn danger sm" name="decision" value="reject">Отклонить</button>
+    </form>
+  </div>
+{% else %}<div class="card muted">Очередь пуста.</div>{% endfor %}
+{% endblock %}

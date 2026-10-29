@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status, avatar %}
+{% block title %}Мои заказы{% endblock %}
+{% block content %}
+<h1>Добрый день, {{ user.first_name }}</h1>
+
+<div class="tiles">
+  <div class="tile dark span-2">
+    <div class="tile-split">
+      <div>
+        <div class="tile-label">Баланс</div>
+        <div class="tile-big">{{ user.balance | money }}</div>
+        <div class="tile-actions"><a href="/balance">Пополнить</a><a class="ghost" href="/balance">История платежей</a></div>
+      </div>
+      <div class="bars" aria-hidden="true" title="Расходы за 6 месяцев">
+        {% for h in summary.bars %}<span style="height: {{ h }}%"></span>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="tile" style="align-items:center;text-align:center">
+    <div class="ring" role="img" aria-label="В резерве безопасной сделки {{ summary.escrow | money }}">
+      <svg width="104" height="104" viewBox="0 0 104 104" aria-hidden="true">
+        <circle cx="52" cy="52" r="44" fill="none" stroke="#EEF0FF" stroke-width="12"/>
+        {% if summary.escrow_pct %}<circle class="val" cx="52" cy="52" r="44" fill="none" stroke="#3D5AFE" stroke-width="12" stroke-linecap="round"
+                style="stroke-dashoffset: {{ 276 - 276 * summary.escrow_pct / 100 }}"/>{% endif %}
+      </svg>
+      <div class="ring-center"><b>{{ summary.escrow | money }}</b><span>в резерве</span></div>
+    </div>
+    <div style="font-weight:700">Безопасная сделка</div>
+  </div>
+
+  {% if summary.waiting %}
+    {% set w = summary.waiting[0] %}
+    <a class="tile accent" href="/client/orders/{{ w.id }}">
+      <div class="tile-label">Работа ждёт приёмки{% if summary.waiting|length > 1 %} · {{ summary.waiting|length }}{% endif %}</div>
+      <div style="font-size:18px;font-weight:700;line-height:1.3">{{ w.title }} — проверьте до {{ w.deadline | dt("%d.%m") }}</div>
+      <span class="btn secondary sm" style="align-self:flex-start">Открыть</span>
+    </a>
+  {% else %}
+    <a class="tile sun" href="{{ '/client/orders/%d' % summary.responders[0].order_id if summary.responders else '/client/orders/new' }}">
+      <div class="tile-label" style="color:var(--ink-2)">Новые отклики</div>
+      <div class="tile-big">{{ summary.responders|length }}</div>
+      {% if summary.responders %}
+        <div class="faces">{% for r in summary.responders[:3] %}{{ avatar(r.freelancer) }}{% endfor %}</div>
+      {% else %}
+        <div style="font-weight:600">Разместите заказ — подберём исполнителей</div>
+      {% endif %}
+    </a>
+  {% endif %}
+</div>
+
+<div class="row between wrap">
+  <div class="tabs">
+    {% for key, (label, _) in tabs.items() %}<a href="?tab={{ key }}" class="{{ 'active' if tab == key }}">{{ label }}</a>{% endfor %}
+  </div>
+  {% if summary.waiting and summary.responders %}<a href="/client/orders/{{ summary.responders[0].order_id }}" class="muted">Новых откликов: <b>{{ summary.responders|length }}</b> →</a>{% endif %}
+</div>
+
+<div>
+{% for o in orders %}
+  <a class="order-item" href="/client/orders/{{ o.id }}">
+    <div>
+      <h3>{{ o.title }}</h3>
+      <div class="row wrap">{{ status(o) }}<small>{{ o.category.name }}</small><small>срок {{ o.deadline | dt }}</small>
+        {% if o.freelancer %}<small>исполнитель: {{ o.freelancer.full_name }}</small>{% endif %}</div>
+    </div>
+    <div class="price">{{ o.price | money }}</div>
+  </a>
+{% else %}
+  <div class="card muted">Здесь пока пусто. <a href="/client/orders/new">Разместить первый заказ</a></div>
+{% endfor %}
+</div>
+{% endblock %}

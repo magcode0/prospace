@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import tags %}
+{% block title %}Доступные заказы{% endblock %}
+{% block content %}
+{% include "freelancer/_tabs.html" %}
+{% for o in offers %}
+  <a class="order-item" href="/freelancer/offers/{{ o.id }}">
+    <div>
+      <h3>{{ o.order.title }}</h3>
+      <div class="row wrap"><small>{{ o.order.category.name }}</small><small>срок {{ o.order.deadline | dt }}</small>
+        <small><b>ответить до {{ o.expires_at | dt("%H:%M") }}</b></small></div>
+      <div style="margin-top:6px">{{ tags(o.order.skills) }}</div>
+    </div>
+    <div class="price">{{ o.order.price | money }}</div>
+  </a>
+{% else %}
+  <div class="card muted">
+    Новых предложений нет. Система присылает заказы, если вы «свободны», были в сети за последние 4 часа,
+    сейчас ваши рабочие часы ({{ 'круглосуточно' if user.work_hours_start == user.work_hours_end else '%d:00–%d:00' % (user.work_hours_start, user.work_hours_end) }}) и указана подходящая категория в <a href="/profile">профиле</a>.
+  </div>
+{% endfor %}
+{% if responded %}
+  <h2 style="margin-top:28px">Мои отклики — ждут решения заказчика</h2>
+  {% for o in responded %}
+    <a class="order-item" href="/freelancer/offers/{{ o.id }}"><div><h3>{{ o.order.title }}</h3><small>отклик {{ o.responded_at | dt }}</small></div><div class="price">{{ o.order.price | money }}</div></a>
+  {% endfor %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status, avatar, tags, offer_status %}
+{% block title %}Заказ #{{ order.id }}{% endblock %}
+{% block content %}
+{% set staff_title = "Заказ #%d" % order.id %}{% include "staff/_nav.html" %}
+<div><a href="/staff/orders" class="muted">← Все заказы</a></div>
+
+<div class="grid two" style="margin-top:14px">
+  <div>
+    <section class="card">
+      <div class="row between wrap"><h2 style="margin:0">{{ order.title }}</h2>{{ status(order) }}</div>
+      <dl class="kv" style="margin-top:16px">
+        <dt>Заказчик</dt><dd><a href="/staff/users/{{ order.client_id }}">{{ order.client.full_name }}</a></dd>
+        <dt>Исполнитель</dt><dd>{% if order.freelancer %}<a href="/staff/users/{{ order.freelancer_id }}">{{ order.freelancer.full_name }}</a>{% else %}—{% endif %}</dd>
+        <dt>Категория</dt><dd>{{ order.category.name }}</dd>
+        <dt>Сумма</dt><dd><b>{{ order.price | money }}</b> · на сделке {{ order.escrow | money }}</dd>
+        <dt>Срок</dt><dd>{{ order.deadline | dt }}</dd>
+        <dt>Навыки</dt><dd>{{ tags(order.skills) or "—" }}</dd>
+        <dt>Создан</dt><dd>{{ order.created_at | dt }}</dd>
+        {% if order.moderation_note %}<dt>Модерация</dt><dd>{{ order.moderation_note }}</dd>{% endif %}
+      </dl>
+      <hr><div style="white-space:pre-wrap">{{ order.description }}</div>
+    </section>
+
+    <section class="card">
+      <h2>Подбор и отклики · {{ offers|length }}</h2>
+      <div class="mini-list">
+        {% for of in offers %}
+          <div><span class="row" style="gap:10px">{{ avatar(of.freelancer) }}<span><a href="/staff/users/{{ of.freelancer_id }}"><b>{{ of.freelancer.full_name }}</b></a>
+            <small>{{ "новичок" if of.is_newbie else "опытный" }} · балл {{ "%.2f"|format(of.score) }} · отправлено {{ of.sent_at | dt("%d.%m %H:%M") }}</small></span></span>
+            {{ offer_status(of) }}</div>
+        {% else %}<p class="muted">Предложений не было.</p>{% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <div>
+    {% if order.status.value in ("moderation", "open") %}
+    <form class="card" method="post" action="/staff/orders/{{ order.id }}/cancel" onsubmit="return confirm('Снять заказ? Заказчику вернётся вся сумма.')">
+      <h2>Снять заказ</h2>
+      <p class="muted">Заказ без исполнителя. Заказчику вернутся сумма заказа и плата за размещение, откликнувшимся — плата за отклик.</p>
+      <div class="field"><input type="text" name="reason" placeholder="Причина (увидит заказчик)" aria-label="Причина"></div>
+      <button class="btn danger block">Снять с возвратом</button>
+    </form>
+    {% endif %}
+    {% if dispute %}
+    <section class="card">
+      <h2>Спор</h2>
+      <p>{{ dispute.reason }}</p>
+      <p class="muted">Открыт {{ dispute.created_at | dt }} · решить до {{ dispute.due_at | dt }}</p>
+      {% if dispute.resolution %}<p><b>Решение:</b> {{ dispute.resolution }}</p>{% else %}<a class="btn sm" href="/staff/disputes">Решить спор</a>{% endif %}
+    </section>
+    {% endif %}
+    <section class="card">
+      <h2>Переписка</h2>
+      {% for fid, n in threads %}<a class="btn secondary sm" style="margin:0 6px 6px 0" href="/chat/{{ order.id }}/{{ fid }}">Чат с исполнителем #{{ fid }} · {{ n }}</a>
+      {% else %}<p class="muted">Сообщений нет.</p>{% endfor %}
+    </section>
+    <section class="card">
+      <h2>Деньги по заказу</h2>
+      <div class="mini-list">
+        {% for t in txs %}
+          <div><span><b>{{ labels[t.kind] }}</b><small>{{ "биржа" if t.user_id is none else "пользователь #%d" % t.user_id }} · {{ t.created_at | dt("%d.%m %H:%M") }}</small></span>
+            <span class="tx-amount {{ 'plus' if t.amount > 0 else 'minus' }}">{{ "+" if t.amount > 0 else "−" }}{{ (t.amount if t.amount > 0 else -t.amount) | money }}</span></div>
+        {% else %}<p class="muted">Операций нет.</p>{% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

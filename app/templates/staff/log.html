@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import avatar %}
+{% block title %}Журнал действий{% endblock %}
+{% block content %}
+{% set staff_title = "Журнал действий" %}{% include "staff/_nav.html" %}
+<div class="notif-list">
+  {% for a in actions %}
+    {% set kind, _, ident = a.target.partition(":") %}
+    <div class="notif" style="animation-delay: {{ [loop.index0 * 0.03, 0.4]|min }}s">
+      {{ avatar(a.staff) }}
+      <span class="notif-body">
+        <span class="notif-title">{{ action_labels.get(a.action, a.action) }}</span>
+        <span class="notif-text">
+          {{ a.staff.full_name }} ·
+          {% if kind == "user" %}<a href="/staff/users/{{ ident }}">пользователь #{{ ident }}</a>
+          {% elif kind == "order" %}<a href="/staff/orders/{{ ident }}">заказ #{{ ident }}</a>
+          {% else %}категория «{{ ident }}»{% endif %}
+          {% if a.details %} · {{ a.details }}{% endif %}
+        </span>
+      </span>
+      <span class="notif-side"><time>{{ a.created_at | dt("%d.%m %H:%M") }}</time></span>
+    </div>
+  {% else %}
+    <div class="notif-empty"><h2>Журнал пуст</h2><p class="muted">Здесь появятся блокировки, корректировки баланса, решения по спорам и модерации.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

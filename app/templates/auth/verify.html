@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Подтверждение email{% endblock %}
+{% block content %}
+<div class="auth-wrap"><div class="card">
+  <h1>Подтвердите email</h1>
+  <p class="muted">Мы отправили 6-значный код на <b>{{ email }}</b>.</p>
+  <form method="post">
+    <div class="field {{ 'invalid' if error }}">
+      <label for="code">Код из письма</label>
+      <input id="code" name="code" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required autofocus>
+      {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    </div>
+    <button class="btn block">Подтвердить</button>
+  </form>
+  <form method="post" action="/verify/resend" style="margin-top:12px"><button class="btn secondary block">Отправить код ещё раз</button></form>
+</div></div>
+{% endblock %}
